@@ -3,14 +3,6 @@ import threading
 from discord.ext import commands
 from discord import Intents
 from flask import Flask, redirect, url_for
-import importlib.util
-
-if importlib.util.find_spec("dotenv") is not None:
-    import dotenv
-    dotenv.load_dotenv("var.env")
-else:
-    print("python-dotenv ist nicht installiert")
-
 
 
 # -------- Discord Setup --------
