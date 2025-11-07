@@ -186,7 +186,7 @@ class Welcome(commands.Cog):
 
     @commands.Cog.listener()
     async def on_member_join(self, member:discord.Member):
-        guild = member@channel = guild
+        guild = member.guild
         channel = guild.get_channel(self.channel_id)
         if not channel:
             return
