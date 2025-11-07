@@ -5,7 +5,7 @@ import io
 import aiohttp
 import random
 from datetime import datetime
-from . import log
+from .log import logSuccess, logError, logWarning, logInfo
 
 
 class Welcome(commands.Cog):
@@ -75,7 +75,7 @@ class Welcome(commands.Cog):
                         avatar_img = Image.open(io.BytesIO(avatar_bytes)).convert("RGBA")
                         return avatar_img
         except Exception as e:
-            await log.logError(
+            await  logError(
                 guild=member.guild,
                 title="Avatar konnte nicht geladen werden",
                 description=str(e),
@@ -130,7 +130,7 @@ class Welcome(commands.Cog):
 
         if not channel:
             await ctx.send("❌ Der Willkommenschannel wurde nicht gefunden.")
-            await log.logWarning(
+            await logWarning(
                 guild=ctx.guild,
                 title="Willkommens-Channel nicht gefunden",
                 description=f"Channel-ID {self.channel_id} existiert auf Server {ctx.guild.name} nicht.",
@@ -158,7 +158,7 @@ class Welcome(commands.Cog):
 
             await ctx.send(f"✅ Willkommensnachricht für {member.mention} wurde im Channel {channel.mention} gesendet!")
 
-            await log.logSuccess(
+            await  logSuccess(
                 guild=ctx.guild,
                 title="Manuelles Willkommensbild gesendet",
                 description=f"Von {ctx.author.name}#{ctx.author.discriminator} für {member.name}#{member.discriminator}",
@@ -173,7 +173,7 @@ class Welcome(commands.Cog):
 
         except Exception as e:
             await ctx.send("❌ Fehler beim Erstellen des Willkommensbilds.")
-            await log.logError(
+            await logError(
                 guild=ctx.guild,
                 title="Fehler beim manuellen Willkommensbild",
                 description=str(e),
@@ -183,6 +183,27 @@ class Welcome(commands.Cog):
                     "Timestamp": timestamp
                 }
             )
+
+    @commands.Cog.listener()
+    async def on_member_join(self, member:discord.Member):
+        guild = member@channel = guild
+        channel = guild.get_channel(self.channel_id)
+        if not channel:
+            return
+        
+        member_count = guild.member_count
+        background, background_path = await self.generate_welcome_image(member, member_count)
+
+        embed = discord.Embed(
+            title="Willkommen!",
+            description=f"{member.mention} ist dem Server beigetreten!",
+            color=discord.Color.green()
+        )
+
+        with io.BytesIO() as image_binary:
+            background.save(image_binary, "PNG")
+            image_binary.seek(0)
+            await channel.send(embed=embed, file=discord.File(fp=image_binary, filename="welcome.png"))
 
 
 def setup(bot):
