@@ -1,0 +1,6 @@
+{
+    "avatar": {"slot": {"x": 130, "y": 92, "w": 580, "h": 550}, "align": "center"},
+    "welcome": {"slot": {"x": 450, "y": 40, "w": 540, "h": 90}, "align": "center"},
+    "name": {"slot": {"x": 65, "y": 600, "w": 730, "h": 70}, "align": "center"},
+    "member": {"slot": {"x": 125, "y":750, "w": 600, "h:": 40}, "align": "left"}
+}
