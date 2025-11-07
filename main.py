@@ -63,6 +63,17 @@ def index():
 def health():
     return "OK", 200
 
+@app.route("/tos")
+def tos():
+    with open("TERMS.html", 'r', encoding='utf-8') as f:
+        return f.read()
+    
+@app.route("/privacy")
+def privacy():
+    with open("PRIVACY.html", 'r', encoding='utf-8') as f:
+        return f.read()
+    
+
 # -------- Helper to run bot in a thread --------
 def run_bot():
     bot.run(os.getenv("BOT_TOKEN"))
