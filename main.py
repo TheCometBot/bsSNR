@@ -92,14 +92,26 @@ def privacy():
 @app.route("/websub/callback", methods=["GET", "POST"])
 def websub_callback():
     if request.method == "GET":
+        # Verifizierung durch den Hub
         challenge = request.args.get("hub.challenge")
         if challenge:
             return challenge, 200
         return "Missing challenge", 400
-    print("Youtube-Update")
-    data = request.data.decode("utf-8")
 
-    root = ET.fromstring(data)
+    # POST vom Hub
+    data = request.data.decode("utf-8")
+    if not data.strip():
+        print("⚠️ POST Data leer")
+        return "", 400
+
+    print("POST Data:", data)
+
+    import xml.etree.ElementTree as ET
+    try:
+        root = ET.fromstring(data)
+    except ET.ParseError as e:
+        print("⚠️ XML Parse Error:", e)
+        return "", 400
 
     entry = root.find("{http://www.w3.org/2005/Atom}entry")
     if entry is not None:
@@ -109,12 +121,16 @@ def websub_callback():
         }
 
         video_id = entry.find("yt:videoId", ns).text
-        channel_id = entry.find("yt:channelId", ns).text
         title = entry.find("atom:title", ns).text
         author = entry.find("atom:author/atom:name", ns).text
         link = entry.find("atom:link", ns).attrib.get("href")
         thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
+
+        # Async Pycord-Task starten
         asyncio.create_task(send_new_yt_video(title, author, link, thumbnail))
+
+    return "", 200
+
 
 
 def subscribe():
