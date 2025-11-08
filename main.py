@@ -1,5 +1,6 @@
 import os
 import threading
+import queue
 import discord
 from discord.ext import commands
 from discord import Intents
@@ -16,6 +17,9 @@ intents.guilds = True
 intents.members = True
 
 bot = commands.Bot(command_prefix="$", intents=intents, max_messages=10000)
+
+# Thread-safe Queue für Videos
+video_queue = queue.Queue()
 
 # Load Cogs
 for filename in os.listdir("./cogs"):
@@ -55,18 +59,23 @@ async def reload(ctx):
         msg += f"\n❌ Fehler: {', '.join(failed)}"
     await ctx.respond(msg, ephemeral=True)
 
-async def send_new_yt_video(title, author, link, thumbnail_url):
-    channel = bot.get_channel(1436649248610582528)
-    if channel:
-        embed = discord.Embed(
-            title=f"{author}: Neues Video!",
-            url=link,
-            description=f"{title}\n@everyone",
-            color=discord.Color.red(),
-        )
-        embed.set_thumbnail(url=thumbnail_url)
-        await channel.send(embed=embed)
-
+# Queue Worker für den Bot
+async def queue_worker():
+    await bot.wait_until_ready()
+    channel = bot.get_channel(1436649248610582528)  # Discord-Kanal
+    while not bot.is_closed():
+        try:
+            title, author, link, thumbnail = video_queue.get(timeout=1)
+            embed = discord.Embed(
+                title=f"{author}: Neues Video!",
+                url=link,
+                description=f"{title}\n@everyone",
+                color=discord.Color.red()
+            )
+            embed.set_thumbnail(url=thumbnail)
+            await channel.send(embed=embed)
+        except queue.Empty:
+            await asyncio.sleep(1)
 
 # -------- Flask Setup --------
 app = Flask(__name__)
@@ -92,7 +101,6 @@ def privacy():
 @app.route("/websub/callback", methods=["GET", "POST"])
 def websub_callback():
     if request.method == "GET":
-        # Verifizierung durch den Hub
         challenge = request.args.get("hub.challenge")
         if challenge:
             return challenge, 200
@@ -106,7 +114,6 @@ def websub_callback():
 
     print("POST Data:", data)
 
-    import xml.etree.ElementTree as ET
     try:
         root = ET.fromstring(data)
     except ET.ParseError as e:
@@ -126,22 +133,19 @@ def websub_callback():
         link = entry.find("atom:link", ns).attrib.get("href")
         thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
 
-        # Async Pycord-Task starten
-        asyncio.create_task(send_new_yt_video(title, author, link, thumbnail))
+        # In die Queue legen
+        video_queue.put((title, author, link, thumbnail))
 
     return "", 200
 
-
-
+# -------- YouTube WebSub Subscription --------
 def subscribe():
     callback_url = "https://creeper-7rup.onrender.com/websub/callback/"
     print("Callback:", callback_url)
     hub_url = "https://pubsubhubbub.appspot.com/subscribe"
     channel_ids = ["UCxzx7sdLPG9XzxC-supGbiw", "UCg7aqczRrjRMTvyQD9FF0Yg"]
-    topics = []
     for cid in channel_ids:
-        topics.append(f"https://www.youtube.com/channel/{cid}")
-    for topic in topics:
+        topic = f"https://www.youtube.com/channel/{cid}"
         data = {
             "hub.mode": "subscribe",
             "hub.topic": topic,
@@ -149,17 +153,21 @@ def subscribe():
             "hub.verify": "async"
         }
         response = requests.post(hub_url, data=data)
-        print("Subscription sended:", response.status_code, response.text)
+        print("Subscription sent:", response.status_code, response.text)
     print("All Subscriptions done.")
-    
 
-# -------- Helper to run bot in a thread --------
+# -------- Bot starten in Thread --------
 def run_bot():
     subscribe()
-    bot.run(os.getenv("BOT_TOKEN"))
+    asyncio.run(start_bot())
+
+async def start_bot():
+    # Queue Worker starten
+    asyncio.create_task(queue_worker())
+    # Bot starten
+    await bot.start(os.getenv("BOT_TOKEN"))
 
 # -------- Main --------
-
 threading.Thread(target=run_bot, daemon=True).start()
-# Starte Flask im Main Thread
+# Flask im Main Thread
 app.run(host="0.0.0.0", port=int(os.getenv("PORT", 5000)))
