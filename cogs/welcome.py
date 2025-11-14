@@ -11,7 +11,7 @@ from .log import logSuccess, logError, logWarning, logInfo
 class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = 1434653562977128589
+        self.channel_id = 1438880119841099821
         self.font_path = "./LilitaOne.ttf"
         self.backgrounds = [
             "./welcomes/Crow.png",

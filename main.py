@@ -59,23 +59,7 @@ async def reload(ctx):
         msg += f"\n❌ Fehler: {', '.join(failed)}"
     await ctx.respond(msg, ephemeral=True)
 
-# Queue Worker für den Bot
-async def queue_worker():
-    await bot.wait_until_ready()
-    channel = bot.get_channel(1436649248610582528)  # Discord-Kanal
-    while not bot.is_closed():
-        try:
-            title, author, link, thumbnail = video_queue.get(timeout=1)
-            embed = discord.Embed(
-                title=f"{author}: Neues Video!",
-                url=link,
-                description=f"{title}\n@everyone",
-                color=discord.Color.red()
-            )
-            embed.set_thumbnail(url=thumbnail)
-            await channel.send(embed=embed)
-        except queue.Empty:
-            await asyncio.sleep(1)
+
 
 # -------- Flask Setup --------
 app = Flask(__name__)
@@ -98,73 +82,14 @@ def privacy():
     with open("PRIVACY.html", 'r', encoding='utf-8') as f:
         return f.read()
     
-@app.route("/websub/callback", methods=["GET", "POST"])
-def websub_callback():
-    if request.method == "GET":
-        challenge = request.args.get("hub.challenge")
-        if challenge:
-            return challenge, 200
-        return "Missing challenge", 400
 
-    # POST vom Hub
-    data = request.data.decode("utf-8")
-    if not data.strip():
-        print("⚠️ POST Data leer")
-        return "", 400
-
-    print("POST Data:", data)
-
-    try:
-        root = ET.fromstring(data)
-    except ET.ParseError as e:
-        print("⚠️ XML Parse Error:", e)
-        return "", 400
-
-    entry = root.find("{http://www.w3.org/2005/Atom}entry")
-    if entry is not None:
-        ns = {
-            "yt": "http://www.youtube.com/xml/schemas/2015",
-            "atom": "http://www.w3.org/2005/Atom"
-        }
-
-        video_id = entry.find("yt:videoId", ns).text
-        title = entry.find("atom:title", ns).text
-        author = entry.find("atom:author/atom:name", ns).text
-        link = entry.find("atom:link", ns).attrib.get("href")
-        thumbnail = f"https://img.youtube.com/vi/{video_id}/hqdefault.jpg"
-
-        # In die Queue legen
-        video_queue.put((title, author, link, thumbnail))
-
-    return "", 200
-
-# -------- YouTube WebSub Subscription --------
-def subscribe():
-    callback_url = "https://creeper-7rup.onrender.com/websub/callback/"
-    print("Callback:", callback_url)
-    hub_url = "https://pubsubhubbub.appspot.com/subscribe"
-    channel_ids = ["UCxzx7sdLPG9XzxC-supGbiw", "UCg7aqczRrjRMTvyQD9FF0Yg"]
-    for cid in channel_ids:
-        topic = f"https://www.youtube.com/channel/{cid}"
-        data = {
-            "hub.mode": "subscribe",
-            "hub.topic": topic,
-            "hub.callback": callback_url,
-            "hub.verify": "async"
-        }
-        response = requests.post(hub_url, data=data)
-        print("Subscription sent:", response.status_code, response.text)
-    print("All Subscriptions done.")
 
 # -------- Bot starten in Thread --------
 def run_bot():
-    subscribe()
+
     asyncio.run(start_bot())
 
 async def start_bot():
-    # Queue Worker starten
-    asyncio.create_task(queue_worker())
-    # Bot starten
     await bot.start(os.getenv("BOT_TOKEN"))
 
 # -------- Main --------
