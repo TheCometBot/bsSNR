@@ -6,7 +6,7 @@ import aiohttp
 import random
 from datetime import datetime
 from .log import logSuccess, logError, logWarning, logInfo
-
+from supabase import Supabase
 
 class Welcome(commands.Cog):
     def __init__(self, bot):
@@ -187,6 +187,26 @@ class Welcome(commands.Cog):
     @commands.Cog.listener()
     async def on_member_join(self, member:discord.Member):
         guild = member.guild
+        
+        try:
+            async with Supabase() as db:
+            user = await db.get_user(member.id)
+            if not user:
+                userd = {
+                    "id": member.id,
+                    "bs": "",
+                    "mc": "",
+                    "lvl": 0
+                 }
+        except Exception as e:
+            print(e)
+            await logError(
+                guild=guild,
+                title="Fehler",
+                description=e,
+                fields={"Quelle": "Supabase, cogs/welcome.py"}
+            )        
+        
         channel = guild.get_channel(self.channel_id)
         if not channel:
             return
