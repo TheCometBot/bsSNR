@@ -11,13 +11,11 @@ from supabase import Supabase
 class Welcome(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.channel_id = 1438880119841099821
+        self.channel_id = 1442525992882143455
         self.font_path = "./LilitaOne.ttf"
         self.backgrounds = [
             "./welcomes/Crow.png",
             "./welcomes/Mortis.png",
-            "./welcomes/Skeleton.png",
-            "./welcomes/Steve.png"
         ]
         
         self.avatar_slot = (130, 92, 580, 550)

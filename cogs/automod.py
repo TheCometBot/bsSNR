@@ -19,7 +19,7 @@ class ReportReasonModal(discord.ui.Modal):
 class AutoMod(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.mod_channel = 1438880120881283247
+        self.mod_channel = 1442525993414819954
 
     # Nachricht melden
     @discord.message_command(name="Nachricht melden")

@@ -18,8 +18,6 @@ intents.members = True
 
 bot = commands.Bot(command_prefix="$", intents=intents, max_messages=10000)
 
-# Thread-safe Queue für Videos
-video_queue = queue.Queue()
 
 # Load Cogs
 for filename in os.listdir("./cogs"):

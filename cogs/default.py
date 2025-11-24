@@ -181,10 +181,10 @@ class TempVCView(discord.ui.View):
 class Default(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
-        self.temp_voice_category_id = 1438880120700932142
+        self.temp_voice_category_id = 1442525993209167971
         self.rules_role_name = "Regel Akzeptiert"
-        self.support_category_id = 1438880120700932144
-        self.support_role_id = 1438880119493103687
+        self.support_category_id = 1442525993414819951
+        self.support_role_id = 1442525992441872513
 
     @commands.Cog.listener()
     async def on_ready(self):
